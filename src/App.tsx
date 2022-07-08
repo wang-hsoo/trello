@@ -34,17 +34,46 @@ const Boards = styled.div`
 function App() {
   const [toDos, setToDos] = useRecoilState(toDoState);
 
-  const onDragEnd = ({draggableId, destination, source}:DropResult) => {
-    if(!destination) return;
-    // setToDos(oldToDos => {
-    //   const copyToDos = [...oldToDos];
+  const onDragEnd = (info:DropResult) => {
 
-    //   // 1) delete item on source.index
-    //   copyToDos.splice(source.index, 1);
-    //   // 2) put back the item on the destination.index
-    //   copyToDos.splice(destination?.index, 0, draggableId);
-    //   return copyToDos;
-    // });
+    const {destination, draggableId, source} = info;
+    if(!destination) return;
+
+    if(destination?.droppableId === source.droppableId){
+      //same board movement
+      setToDos(oldToDos => {
+        const boardCopy = [...oldToDos[source.droppableId]];
+        // 1) delete item on source.index
+        boardCopy.splice(source.index, 1);
+        // 2) put back the item on the destination.index
+        boardCopy.splice(destination?.index, 0, draggableId);
+        return {
+          ...oldToDos,
+          [source.droppableId] : boardCopy
+        };
+      });
+    }
+
+    if(destination.droppableId !== source.droppableId){
+      //cross board 
+
+      setToDos((allBoard) => {
+        //움직임이 시작된 board의 id
+        const sourceBoard = [...allBoard[source.droppableId]];
+        //움직임이 끝나느 board의 id
+        const targetBoard = [...allBoard[destination.droppableId]];
+
+        sourceBoard.splice(source.index, 1);
+        targetBoard.splice(destination?.index, 0, draggableId);
+        return{
+          ...allBoard,
+          [source.droppableId] : sourceBoard,
+          [destination.droppableId] : targetBoard
+        }
+      })
+    }
+    
+    
   };
 
   return (

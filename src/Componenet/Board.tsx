@@ -11,10 +11,11 @@ const Wrapper = styled.div`
         border-radius: 5px;
 `;
 
-const Title = styled.h3`
+const Title = styled.h2`
     text-align: center;
-    padding-bottom: 5px;
-    font-weight: 500;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-size: 18px;
 `;
 
 interface IBoardProps{
@@ -28,7 +29,7 @@ function Board({toDos, boardId}: IBoardProps){
     return(
         <Wrapper>
             <Title>{boardId}</Title>
-            <Droppable droppableId='one'>
+            <Droppable droppableId={boardId}>
                 {(magic) => 
                 <div ref = {magic.innerRef}{...magic.droppableProps}>
                     {toDos.map( (toDo, index) => 

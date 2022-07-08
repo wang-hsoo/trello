@@ -20,7 +20,6 @@ function DraggbbleCard ({toDo, index}:IDragabbleCardProps){
         <Draggable draggableId={toDo} index={index} key={toDo}>
             {(magic) => (
               <Card ref = {magic.innerRef}{...magic.draggableProps}{...magic.dragHandleProps}>
-                {index + 1}
                 {toDo}
             </Card>)}
         </Draggable>
