@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult} from "react-beautiful-dnd";
+import { useForm } from 'react-hook-form';
 import { useRecoilState } from 'recoil';
 import styled from 'styled-components';
-import { toDoState } from './atoms';
+import { IToDostate, toDoState } from './atoms';
 import Board from './Componenet/Board';
 import DraggbbleCard from './Componenet/DragabbleCard';
 
@@ -23,6 +24,14 @@ const Boards = styled.div`
   gap:10px;
 `
 
+const CreateBoard = styled.form`
+  width: 100%;
+`;
+
+interface IBoardForm{
+  board:string;
+}
+
 
 
 
@@ -33,6 +42,8 @@ const Boards = styled.div`
 
 function App() {
   const [toDos, setToDos] = useRecoilState(toDoState);
+  const {register, setValue, handleSubmit} = useForm<IBoardForm>();
+  
 
   const onDragEnd = (info:DropResult) => {
 
@@ -43,10 +54,11 @@ function App() {
       //same board movement
       setToDos(oldToDos => {
         const boardCopy = [...oldToDos[source.droppableId]];
+        const taskObj = boardCopy[source.index];
         // 1) delete item on source.index
         boardCopy.splice(source.index, 1);
         // 2) put back the item on the destination.index
-        boardCopy.splice(destination?.index, 0, draggableId);
+        boardCopy.splice(destination?.index, 0, taskObj);
         return {
           ...oldToDos,
           [source.droppableId] : boardCopy
@@ -60,11 +72,12 @@ function App() {
       setToDos((allBoard) => {
         //움직임이 시작된 board의 id
         const sourceBoard = [...allBoard[source.droppableId]];
+        const taskObj = sourceBoard[source.index];
         //움직임이 끝나느 board의 id
         const targetBoard = [...allBoard[destination.droppableId]];
 
         sourceBoard.splice(source.index, 1);
-        targetBoard.splice(destination?.index, 0, draggableId);
+        targetBoard.splice(destination?.index, 0, taskObj);
         return{
           ...allBoard,
           [source.droppableId] : sourceBoard,
@@ -76,11 +89,52 @@ function App() {
     
   };
 
+  const onValid = ({board}: IBoardForm) => {
+    setToDos((allBoard) => {
+      return{
+        ...allBoard,
+        [board]:[]
+      }
+    });
+    setValue("board", "");
+  }
+
+  const setBoard = () => {
+    localStorage.setItem("trello",  JSON.stringify(toDos));
+    console.log(toDos);
+  }
+
+  useEffect(() => {
+    const getBoard = localStorage.getItem("trello" );
+    if(typeof getBoard === 'string'){
+      var parseBoard = JSON.parse(getBoard);
+
+      setToDos(() => {
+        return{
+          ...parseBoard
+        }
+      });
+
+    }
+  },[]);
+
+  useEffect(()=>{
+    setBoard();
+  },[toDos]);
+
+  
+
   return (
       <DragDropContext onDragEnd={onDragEnd}>
+        <CreateBoard onSubmit={handleSubmit(onValid)}>
+            <h3>create Board</h3>
+            <input type="text" placeholder='boardName'  {...register("board", {required: true})}/>
+        </CreateBoard>
         <Wrapper>
+          
           <Boards>
             {Object.keys(toDos).map(boardId => <Board key={boardId} boardId={boardId} toDos={toDos[boardId]} />)}
+
           </Boards>
         </Wrapper>
       </DragDropContext>

@@ -1,14 +1,19 @@
+import { useForm } from "react-hook-form";
 import { Droppable } from "react-beautiful-dnd";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useSetRecoilState } from "recoil";
 import styled from "styled-components";
-import { toDoState } from "../atoms";
+import { IToDo, toDoState } from "../atoms";
 import DraggbbleCard from "./DragabbleCard";
+import { useEffect } from "react";
+
 
 const Wrapper = styled.div`
-        padding-top: 30px;
-        padding: 20px 10px;  
+        padding: 10px 0px;  
         background-color: ${(props) => props.theme.boardColor};
         border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
 `;
 
 const Title = styled.h2`
@@ -18,26 +23,82 @@ const Title = styled.h2`
     font-size: 18px;
 `;
 
+const Area = styled.div<IAreaProps>`
+  background-color: ${(props) =>
+    props.isDraggingOver
+      ? "#dfe6e9"
+      : props.draggingFromThisWith
+      ? "#b2bec3"
+      : "transparent"};
+  flex-grow: 1;
+  transition: background-color 0.3s ease-in-out;
+  padding: 20px;
+`;
+
+const Form = styled.form`
+  width : 100% ;
+  input{
+    width: 100%;
+  }
+`;
+
 interface IBoardProps{
-    toDos: string[];
+    toDos: IToDo[];
     boardId: string;
 }
 
+interface IAreaProps{
+    isDraggingOver: boolean;
+    draggingFromThisWith:boolean;
+}
+
+interface IForm{
+    toDo: string;
+}
+
 function Board({toDos, boardId}: IBoardProps){
-    
+    const setToDos = useSetRecoilState(toDoState);
+    const {register, setValue, handleSubmit} = useForm<IForm>();
+    const onValid = ({toDo}:IForm) => {
+        const newToDo = {
+            id: Date.now(),
+            text: toDo,
+        };
+
+        setToDos((allBoards) => {
+            return{
+                ...allBoards,
+                [boardId]: [
+                    ...allBoards[boardId],
+                    newToDo
+                ],
+            }
+        });
+
+        setValue("toDo", "");
+    }
 
     return(
         <Wrapper>
             <Title>{boardId}</Title>
+            <Form onSubmit={handleSubmit(onValid)}>
+                <input {...register("toDo", {required: true})} type="text" placeholder={`Add task on ${boardId}`} />
+            </Form>
             <Droppable droppableId={boardId}>
-                {(magic) => 
-                <div ref = {magic.innerRef}{...magic.droppableProps}>
+                {(magic, snapshot) => 
+                <Area 
+                    isDraggingOver = {snapshot.isDraggingOver} 
+                    draggingFromThisWith={Boolean(snapshot.draggingFromThisWith)} 
+                    ref = {magic.innerRef}{...magic.droppableProps}
+                    //ref react 코드를 이용해 html 요소를 지정하고, 가져올 수 있는 방법
+                >
                     {toDos.map( (toDo, index) => 
-                    <DraggbbleCard key={toDo} index={index} toDo={toDo} />
+                    <DraggbbleCard key={toDo.id} index={index} toDoId={toDo.id} toDoText={toDo.text} />
                     )}
                     {magic.placeholder}
-                </div>}
+                </Area>}
             </Droppable>
+
         </Wrapper>
     )
 }
